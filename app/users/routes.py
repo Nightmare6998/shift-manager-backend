@@ -26,8 +26,10 @@ def update_profile():
         return error_response(400, "validation_error", "Check your input.", errors)
     if not values:
         return error_response(400, "validation_error", "Include email or full_name.")
-    for key, value in values.items():
-        setattr(g.user, key, value)
+    if "email" in values:
+        g.user.email = values["email"]
+    if "full_name" in values:
+        g.user.full_name = values["full_name"]
     try:
         db.session.commit()
     except IntegrityError:

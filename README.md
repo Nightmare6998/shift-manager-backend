@@ -1,43 +1,36 @@
 # Shift Manager Backend
 
-GitHub: https://github.com/Nightmare6998/shift-manager-backend
+This is my backend capstone project. A manager can create, view, edit, and delete shifts. Each shift belongs to the manager who made it. Other managers cannot access it.
 
-Live API: https://shift-manager-backend-tdtl.onrender.com
+User story: As a shift manager, I want to view my shifts so I can keep my schedule organized.
 
-This API lets a shift manager create, view, change, and delete shifts. Each shift belongs to the manager who created it. Other managers cannot see or change it.
+- Repo: https://github.com/Nightmare6998/shift-manager-backend
+- Live API: https://shift-manager-backend-tdtl.onrender.com
+- Health check: https://shift-manager-backend-tdtl.onrender.com/health
 
-User story: As a shift manager, I want to view my shifts so I can keep the schedule organized.
+The project uses Python 3.12, Flask, SQLAlchemy, and JWT. Docker uses PostgreSQL. Running Python directly uses SQLite by default.
 
-Built with Python 3.12, Flask, SQLAlchemy, JWT, and PostgreSQL. Local Python setup uses SQLite. This is a backend only. It does not include employee accounts, automatic conflict checking, or a website.
+## Run with Docker
 
-## Run with Docker Compose
-
-Install Python 3.12 and Docker Desktop. Start Docker Desktop before these steps.
-
-Download this repo, open a terminal in its folder, then run:
+Install Python 3.12 and Docker Desktop. Start Docker Desktop. Clone this repo and open its folder:
 
 ```sh
+git clone https://github.com/Nightmare6998/shift-manager-backend.git
+cd shift-manager-backend
 python scripts/setup_env.py
 docker compose up -d --build
 ```
 
-The first command creates `.env` with random local secrets. The second starts the API and PostgreSQL. Migrations run before the API starts.
+The setup script creates `.env` with random local secrets. Compose starts the app and database. Database migrations run at startup.
 
 ```sh
 docker compose ps
 curl -i http://localhost:5000/health
 ```
 
-Expected: `200 OK` and `{"status":"ok"}`. In Windows PowerShell, use `curl.exe` if `curl` runs a different command.
+The health check should return `200` and `{"status":"ok"}`. In PowerShell, use `curl.exe` if needed.
 
-To stop and restart:
-
-```sh
-docker compose down
-docker compose up -d
-```
-
-Data stays in the `postgres_data` volume. `docker compose down -v` deletes it.
+To stop, run `docker compose down`. To start again, run `docker compose up -d`. The database keeps its data in a volume. Adding `-v` to the down command deletes that data.
 
 ## Run without Docker
 
@@ -45,13 +38,7 @@ Data stays in the `postgres_data` volume. `docker compose down -v` deletes it.
 python -m venv .venv
 ```
 
-Activate it on Windows:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-On macOS/Linux: `source .venv/bin/activate`.
+Activate it with `.venv\Scripts\Activate.ps1` on Windows or `source .venv/bin/activate` on macOS/Linux. Then run:
 
 ```sh
 python -m pip install -r requirements.txt
@@ -60,87 +47,77 @@ python -m flask db upgrade
 python -m flask run
 ```
 
-## Environment variables
+## Settings
 
-`.env.example` shows the settings. Real values go in `.env`, which Git ignores.
+Real settings go in `.env`. Git ignores this file. `.env.example` shows which settings are needed.
 
-| Variable | Purpose |
+| Setting | What it does |
 | --- | --- |
-| APP_ENV | development, testing, or production |
-| APP_NAME | App name; change it and restart to try config loading |
-| JWT_SECRET | Random secret, at least 32 characters |
-| JWT_ACCESS_TOKEN_EXPIRES_SECONDS | Token lifetime; default 3600 seconds |
-| DATABASE_URL | SQLite locally or PostgreSQL on a host |
-| POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB | Local Compose database settings |
-| PORT | Hosting port; default 5000 |
+| APP_ENV | Picks development, testing, or production |
+| APP_NAME | Sets the app name |
+| JWT_SECRET | Signs tokens; use a random value of at least 32 characters |
+| JWT_ACCESS_TOKEN_EXPIRES_SECONDS | Sets how long tokens last; default is 3600 seconds |
+| DATABASE_URL | Selects the database |
+| POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB | Set up the local Docker database |
+| PORT | Sets the hosting port; default is 5000 |
 
-Compose uses `db` as the database host. Use letters and numbers for its database username, password, and name. The setup script makes a safe random password. Production needs its own database URL and JWT secret. Never post real secrets in GitHub or school evidence.
+Compose uses `db` as the database host. Keep its database username, password, and database name to letters and numbers. The setup script handles the password. Use separate secrets for production, and never put real secrets in GitHub.
 
-## Endpoints
+## API routes
 
-Send JSON with `Content-Type: application/json`. Protected routes need `Authorization: Bearer YOUR_TOKEN`.
+Send JSON with `Content-Type: application/json`. Except for health, registration, and login, routes need an `Authorization: Bearer YOUR_TOKEN` header.
 
-| Method | Path | Purpose | Success |
+| Method | Route | Action | Success |
 | --- | --- | --- | --- |
-| GET | /health | Check the API is running (public) | 200 |
-| POST | /auth/register | Create an account (public) | 201 |
-| POST | /auth/login | Get a token (public) | 200 |
+| GET | /health | Check the app | 200 |
+| POST | /auth/register | Create an account | 201 |
+| POST | /auth/login | Get a token | 200 |
 | GET | /users/me | Read your profile | 200 |
-| PATCH | /users/me | Change your email or full_name | 200 |
+| PATCH | /users/me | Change email or full_name | 200 |
 | GET | /shifts | List your shifts | 200 |
-| POST | /shifts | Create your shift | 201 |
-| GET | /shifts/{id} | Read your shift | 200 |
-| PUT | /shifts/{id} | Replace your shift fields | 200 |
-| PATCH | /shifts/{id} | Change part of your shift | 200 |
-| DELETE | /shifts/{id} | Delete your shift | 204 |
+| POST | /shifts | Create a shift | 201 |
+| GET | /shifts/{id} | Read one shift | 200 |
+| PUT | /shifts/{id} | Replace a shift | 200 |
+| PATCH | /shifts/{id} | Change part of a shift | 200 |
+| DELETE | /shifts/{id} | Delete a shift | 204 |
 | GET | /admin/ping | Check admin access | 200 |
 
-`/auth/me` and `/auth/profile` also read your profile. `PATCH /auth/profile` also updates it. These keep the earlier lesson paths working.
+`GET /auth/me` and `GET /auth/profile` also read your profile. `PATCH /auth/profile` also updates it.
 
-Errors use the same shape: `{"error":"validation_error","message":"Check your input.","details":{}}`. Field errors appear in `details`.
+Errors have `error`, `message`, and `details` fields. Status codes are 400 for bad input, 401 for missing or bad login proof, 403 for a non-admin on the admin route, 404 for a missing shift, and 409 for an email already in use. Another manager's shift also returns 404 to keep it private. Admins can only access their own shifts too.
 
-| Status | Meaning |
-| --- | --- |
-| 400 | Bad JSON, missing fields, or invalid values |
-| 401 | Missing, invalid, or expired token; incorrect login |
-| 403 | Logged in, but not an admin on /admin/ping |
-| 404 | Missing shift or a shift owned by another manager |
-| 409 | Email is already registered |
+## Try it
 
-The 404 ownership response keeps other managers' shift IDs private. Admins still only see their own shifts. Profiles never return passwords or password hashes. Profile updates only accept changes to email and full_name; other fields are ignored.
-
-## Example requests
-
-These examples use a Bash terminal. Replace `YOUR_TOKEN` with the login result.
+These commands use Bash. Log in and copy the returned token into `YOUR_TOKEN`:
 
 ```sh
 curl -i -X POST http://localhost:5000/auth/register -H 'Content-Type: application/json' -d '{"email":"manager@example.com","password":"password123"}'
 curl -i -X POST http://localhost:5000/auth/login -H 'Content-Type: application/json' -d '{"email":"manager@example.com","password":"password123"}'
-curl -i -X POST http://localhost:5000/shifts -H 'Authorization: Bearer YOUR_TOKEN' -H 'Content-Type: application/json' -d '{"role_title":"Floor lead","start_time":"2026-12-01T08:00:00-06:00","end_time":"2026-12-01T16:00:00-06:00","location":"Main store","notes":"Opening shift"}'
+curl -i -X POST http://localhost:5000/shifts -H 'Authorization: Bearer YOUR_TOKEN' -H 'Content-Type: application/json' -d '{"role_title":"Floor lead","location":"Main store","start_time":"2026-12-01T08:00:00-06:00","end_time":"2026-12-01T16:00:00-06:00"}'
 curl -i 'http://localhost:5000/shifts?page=1&per_page=2' -H 'Authorization: Bearer YOUR_TOKEN'
 ```
 
-Required shift fields: role_title (1–100 characters), location (1–150), start_time, and end_time. Notes are optional (up to 5000 characters). Times need an ISO timestamp with a timezone. End must be after start. Times are saved and returned in UTC. Ownership comes from the token, never the request body.
+A shift needs role_title (up to 100 characters), location (up to 150), start_time, and end_time. Notes are optional (up to 5000 characters). Times must include a timezone, and end must come after start. The app returns times in UTC. The manager ID comes from the token.
 
-PUT requires all four required fields and clears notes if left out. PATCH changes only fields you send. DELETE returns an empty body.
+PUT needs all four required fields and clears notes if left out. PATCH changes only the fields sent. DELETE returns an empty body. Profile changes only allow email and full_name. Passwords and hashes are never returned.
 
-Lists use `{"data":[...],"meta":{"page":1,"per_page":20,"total":1,"pages":1}}`. Page starts at 1. Per page defaults to 20 and must be 1–50. Results are ordered by ID. Pages past the end return an empty list with status 200. An empty collection has one empty page.
+Lists return `data` and `meta`. Meta has page, per_page, total, and pages. Page defaults to 1; per_page defaults to 20 and must be 1–50. Results are ordered by ID. A page past the end returns an empty list with status 200. An empty collection has one empty page.
 
-## Migrations and admin
+## Database and admin
 
-Existing migrations are included. Apply them with `python -m flask db upgrade`. For future model changes, run `python -m flask db migrate -m "Describe the change"`, check the new file, then upgrade. Do not run `db init` again.
+Run `python -m flask db upgrade` to apply the included migrations. After a future model change, run `python -m flask db migrate -m "Describe the change"`, check the migration, then upgrade. Do not run `db init` again.
 
-Create an admin privately; it asks for a password:
+Create an admin from the terminal. It asks for a password:
 
 ```sh
 docker compose exec web python -m flask create-admin --email admin@example.com
 ```
 
-Without Docker: `python -m flask create-admin --email admin@example.com`.
+Without Docker, leave off `docker compose exec web`. Public registration always creates a normal user.
 
-JWTs expire after the configured lifetime. Logout means deleting the token on the client. There is no session store or token blacklist, so logout does not cancel a token already issued. Roles are checked from the database after token verification.
+Passwords are saved as hashes. Login checks the hash and gives a signed JWT that expires. Logout deletes the token on the client. Since there is no token blacklist, logout does not cancel a token already issued.
 
-## Tests and evidence
+## Tests
 
 ```sh
 python -m pip install -r requirements-dev.txt
@@ -148,30 +125,22 @@ python -m pytest -q
 python scripts/smoke_test.py http://localhost:5000
 ```
 
-The smoke test uses real HTTP requests and creates two temporary test accounts and shifts. It prints status codes and response bodies, with tokens hidden. Save text evidence with `python scripts/smoke_test.py http://localhost:5000 > evidence/local.txt`. Run it against the deployed URL for live evidence. See `docs/submission.md` for the last checks.
+The smoke test checks real HTTP requests with two test accounts. It hides tokens in its output. Save output with `python scripts/smoke_test.py http://localhost:5000 > evidence/local.txt`. Use the live URL to test deployment. GitHub also checks Docker startup and data after a restart.
 
-## Deployment
+## Deploy
 
-1. Push this project to a public GitHub repo.
-2. Create a Render account and a PostgreSQL database (for example, Neon).
-3. In Render, create a Docker web service from the repo. Set health check path to `/health`.
-4. Set `APP_ENV=production`, a new random `JWT_SECRET`, and the host's `DATABASE_URL`. Use `postgresql+psycopg://...` and the provider's SSL settings (usually `sslmode=require`). Set the token lifetime to 3600.
-5. Deploy. `start.sh` applies migrations, then runs Gunicorn on Render's `PORT`.
-6. Run the smoke test against the live URL. Put the actual GitHub and live URLs in your submission.
+Create a Render Docker web service from the public repo and a PostgreSQL database. Set APP_ENV to production, add a new JWT_SECRET, and set DATABASE_URL to the hosted database. Use the database provider's SSL settings. Set the health check path to `/health`. `start.sh` runs migrations and starts Gunicorn on the host's PORT. `render.yaml` has the basic settings too.
 
-`render.yaml` includes these service settings. Hosting may have a cost; review the plan before creating the service.
+The current free API may take about a minute to wake up. Its free Render database expires on **December 6, 2026**. Move the data or upgrade before that date to keep it online. Review costs before choosing a paid plan.
 
-The current deployment uses free Render services. The API may take about a minute to wake up after being idle. Its free database expires on December 6, 2026. Move the data or upgrade the database before that date if the project still needs to stay online.
-
-If startup fails, check `docker compose logs web` or the hosting logs. A database connection error often means a wrong URL, password, or host. Inside Compose, the database host is `db`, not `localhost`. A 502 from a host means to check startup logs and the port binding. `/health` checks that the API is running; the smoke test also checks database operations.
+If the app fails to start, check `docker compose logs web` or the hosting logs. Check the database URL and port. Inside Compose, use `db` for the database host, not `localhost`. The health route checks the app; the smoke test also checks database actions.
 
 ## Files
 
-```text
-app/          factory, models, validation, routes
-migrations/   database changes
-scripts/      setup and HTTP smoke test
-tests/        API checks
-docs/         short study notes and submission checklist
-Dockerfile, docker-compose.yml, start.sh, render.yaml
-```
+- `app/`: app factory, models, routes, and validation
+- `migrations/`: database changes
+- `scripts/`: local setup and smoke test
+- `tests/`: API tests
+- `docs/`: code notes and submission checklist
+
+Read `docs/code-notes.md` to review how the code works and `docs/submission.md` before submitting.

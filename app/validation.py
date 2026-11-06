@@ -12,10 +12,13 @@ def json_body():
 
 
 def account_fields(data, registration=False):
-    values, errors = {}, {}
+    values = {}
+    errors = {}
     if registration or "email" in data:
         email = data.get("email")
-        if not isinstance(email, str) or len(email) > 255 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email.strip()):
+        if not isinstance(email, str):
+            errors["email"] = "Enter a valid email, up to 255 characters."
+        elif len(email) > 255 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email.strip()):
             errors["email"] = "Enter a valid email, up to 255 characters."
         else:
             values["email"] = email.strip().lower()
@@ -30,16 +33,21 @@ def account_fields(data, registration=False):
         if name is not None and (not isinstance(name, str) or len(name.strip()) > 100):
             errors["full_name"] = "Use text up to 100 characters, or null."
         else:
-            values["full_name"] = name.strip() if name is not None else None
+            if name is None:
+                values["full_name"] = None
+            else:
+                values["full_name"] = name.strip()
     return values, errors
 
 
 def shift_fields(data, existing=None, partial=False):
-    values, errors = {}, {}
+    values = {}
+    errors = {}
     required = {"role_title", "location", "start_time", "end_time"}
     allowed = required | {"notes"}
-    for key in data.keys() - allowed:
-        errors[key] = "This field cannot be set."
+    for key in data:
+        if key not in allowed:
+            errors[key] = "This field cannot be set."
     for key in required:
         if key not in data and not partial:
             errors[key] = "This field is required."
@@ -68,7 +76,8 @@ def shift_fields(data, existing=None, partial=False):
         start = values.get("start_time", existing.start_time.replace(tzinfo=timezone.utc))
         end = values.get("end_time", existing.end_time.replace(tzinfo=timezone.utc))
     else:
-        start, end = values.get("start_time"), values.get("end_time")
+        start = values.get("start_time")
+        end = values.get("end_time")
     if start and end and end <= start:
         errors["end_time"] = "End time must be after start time."
     if partial and not values and not errors:

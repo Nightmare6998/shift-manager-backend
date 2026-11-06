@@ -41,8 +41,11 @@ def create_app(config_name=None):
     def health():
         return jsonify(status="ok")
 
-    for blueprint in (health_bp, auth_bp, users_bp, shifts_bp, admin_bp):
-        app.register_blueprint(blueprint)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(shifts_bp)
+    app.register_blueprint(admin_bp)
     app.cli.add_command(create_admin)
     register_error_handlers(app)
     return app

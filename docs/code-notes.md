@@ -18,3 +18,12 @@
 401 means login proof is missing or invalid. 403 means the user is logged in but lacks permission. A different manager gets 404 for your shifts so the API does not reveal which IDs belong to other people.
 
 Docker keeps the app and its dependencies together. Compose runs the app and database together. The named volume keeps the database when containers stop.
+
+## A few Python details
+
+- `g` holds the current user's information during one request.
+- A decorator such as `@jwt_required` runs a check before the route runs.
+- `**values` passes a dictionary's fields as named arguments, like `Shift(location="Store")`.
+- `setattr(shift, key, value)` changes the field named by `key`. Validation limits which fields can change.
+- `commit()` saves database changes. `rollback()` cancels changes when a save fails.
+- A blueprint groups related routes. The factory adds those groups to the app.

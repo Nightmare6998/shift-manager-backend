@@ -11,7 +11,7 @@ shifts_bp = Blueprint("shifts", __name__, url_prefix="/shifts")
 
 def owned_shift(shift_id):
     # Other managers get the same 404 as a missing record.
-    return db.session.scalar(db.select(Shift).where(Shift.id == shift_id, Shift.user_id == g.user_id))
+    return Shift.query.filter_by(id=shift_id, user_id=g.user_id).first()
 
 
 @shifts_bp.get("")
@@ -26,10 +26,20 @@ def list_shifts():
         return error_response(400, "validation_error", "page must be positive; per_page must be 1 to 50.")
     query = Shift.query.filter_by(user_id=g.user_id)
     total = query.count()
-    shifts = query.order_by(Shift.id.asc()).offset((page - 1) * per_page).limit(per_page).all()
-    return jsonify(data=[shift.to_dict() for shift in shifts],
-                   meta={"page": page, "per_page": per_page, "total": total,
-                         "pages": max(1, math.ceil(total / per_page))})
+    offset = (page - 1) * per_page
+    shifts = query.order_by(Shift.id.asc()).offset(offset).limit(per_page).all()
+
+    data = []
+    for shift in shifts:
+        data.append(shift.to_dict())
+
+    pages = max(1, math.ceil(total / per_page))
+    return jsonify(data=data, meta={
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "pages": pages,
+    })
 
 
 @shifts_bp.post("")
