@@ -36,3 +36,25 @@ jobs:
             sleep 1
           done
           python scripts/smoke_test.py http://localhost:5000
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Start app and database
+        run: |
+          python scripts/setup_env.py
+          docker compose up -d --build --wait
+          python scripts/smoke_test.py http://localhost:5000
+      - name: Check data survives a restart
+        run: |
+          curl -fsS -X POST http://localhost:5000/auth/register -H 'Content-Type: application/json' -d '{"email":"persistence@example.com","password":"test-password123"}'
+          docker compose down
+          docker compose up -d --wait
+          curl -fsS -X POST http://localhost:5000/auth/login -H 'Content-Type: application/json' -d '{"email":"persistence@example.com","password":"test-password123"}' > /tmp/login.json
+          python -c "import json; assert 'access_token' in json.load(open('/tmp/login.json')); print('Account survived restart.')"
+      - name: Show container logs
+        if: always()
+        run: docker compose logs --tail=40

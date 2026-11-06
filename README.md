@@ -1,5 +1,9 @@
 # Shift Manager Backend
 
+GitHub: https://github.com/Nightmare6998/shift-manager-backend
+
+Live API: https://shift-manager-backend-tdtl.onrender.com
+
 This API lets a shift manager create, view, change, and delete shifts. Each shift belongs to the manager who created it. Other managers cannot see or change it.
 
 User story: As a shift manager, I want to view my shifts so I can keep the schedule organized.
@@ -156,6 +160,8 @@ The smoke test uses real HTTP requests and creates two temporary test accounts a
 6. Run the smoke test against the live URL. Put the actual GitHub and live URLs in your submission.
 
 `render.yaml` includes these service settings. Hosting may have a cost; review the plan before creating the service.
+
+The current deployment uses free Render services. The API may take about a minute to wake up after being idle. Its free database expires on December 6, 2026. Move the data or upgrade the database before that date if the project still needs to stay online.
 
 If startup fails, check `docker compose logs web` or the hosting logs. A database connection error often means a wrong URL, password, or host. Inside Compose, the database host is `db`, not `localhost`. A 502 from a host means to check startup logs and the port binding. `/health` checks that the API is running; the smoke test also checks database operations.
 
