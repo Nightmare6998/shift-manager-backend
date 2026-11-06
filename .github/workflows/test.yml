@@ -1,0 +1,38 @@
+name: Test backend
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - name: Test PostgreSQL and HTTP workflow
+        env:
+          APP_ENV: production
+          JWT_SECRET: ci-only-secret-at-least-32-characters-long
+          DATABASE_URL: postgresql+psycopg://test_user:test_password@localhost:5432/test_db
+        run: |
+          sh start.sh > /tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5000/health; then break; fi
+            sleep 1
+          done
+          python scripts/smoke_test.py http://localhost:5000
