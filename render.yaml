@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: shift-manager-backend
+    runtime: docker
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_EXPIRES_SECONDS
+        value: 3600
+      - key: DATABASE_URL
+        sync: false
